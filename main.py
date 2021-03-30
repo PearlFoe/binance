@@ -1,11 +1,35 @@
 import requests
 import json
 import time
+import websocket
 
 from loguru import logger
 
 from binance import Binance
 
+def on_message(ws, message):
+	data = json.loads(message)
+	print(data)
+
+def on_error(ws, error):
+	print(error)
+
+def on_close(ws):
+	print("### closed ###")
+
+def on_open(ws):
+	print("### connected ###")
+
+if __name__ == "__main__":
+	#ws = websocket.WebSocketApp("wss://stream.binance.com:9443/stream?streams=ltcbtc@aggTrade/ethbtc@aggTrade",
+	ws = websocket.WebSocketApp("wss://stream.binance.com:9443/ws/ltcbtc@aggTrade/ethbtc@aggTrade",
+								on_message = on_message,
+								on_error = on_error,
+								on_close = on_close)
+	ws.on_open = on_open
+	ws.run_forever()
+
+'''
 logger.add('main_log_file.log', format='{time} {level} {message}', level='INFO')
 api_url = 'https://api.binance.com'
 
@@ -27,6 +51,6 @@ def main():
 	account_info = bot.get_account_info(timestamp=bot.time()['serverTime'])
 	print(account_info)
 
-
-if __name__ == '__main__':
+if __name__ == "__main__":
 	main()
+'''
