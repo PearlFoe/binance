@@ -1,35 +1,16 @@
 import requests
 import json
 import time
-import websocket
+import talib
+import numpy
+import datetime
 
+import matplotlib.dates as mdates
+import matplotlib.pyplot as plt
 from loguru import logger
 
 from binance import Binance
 
-def on_message(ws, message):
-	data = json.loads(message)
-	print(data)
-
-def on_error(ws, error):
-	print(error)
-
-def on_close(ws):
-	print("### closed ###")
-
-def on_open(ws):
-	print("### connected ###")
-
-if __name__ == "__main__":
-	#ws = websocket.WebSocketApp("wss://stream.binance.com:9443/stream?streams=ltcbtc@aggTrade/ethbtc@aggTrade",
-	ws = websocket.WebSocketApp("wss://stream.binance.com:9443/ws/ltcbtc@aggTrade/ethbtc@aggTrade",
-								on_message = on_message,
-								on_error = on_error,
-								on_close = on_close)
-	ws.on_open = on_open
-	ws.run_forever()
-
-'''
 logger.add('main_log_file.log', format='{time} {level} {message}', level='INFO')
 api_url = 'https://api.binance.com'
 
@@ -48,9 +29,27 @@ def get_api_keys(file_name):
 def main():
 	api_key, secret_key = get_api_keys('personal_data.json')
 	bot = Binance(api_key, secret_key)
-	account_info = bot.get_account_info(timestamp=bot.time()['serverTime'])
-	print(account_info)
+	k_lines = bot.klines(symbol='BNBBTC', interval='5m', limit=200)
+
+	inputs = {}
+	inputs['open'] = numpy.asarray([float(i[1]) for i in k_lines])
+	inputs['high'] = numpy.asarray([float(i[2]) for i in k_lines])
+	inputs['low'] = numpy.asarray([float(i[3]) for i in k_lines])
+	inputs['close'] = numpy.asarray([float(i[4]) for i in k_lines])
+
+	sma = talib.SMA(inputs['close'])
+	xdate = [datetime.datetime.fromtimestamp(item[0]/100) for item in k_lines]
+
+	minutes = mdates.MinuteLocator()
+	hours = mdates.HourLocator()
+	timeFmt = mdates.DateFormatter('%H-%M')
+	fig, ax = plt.subplots()
+	plt.plot(xdate, sma)
+	ax.xaxis.set_major_locator(hours)
+	ax.xaxis.set_major_formatter(timeFmt)
+	ax.xaxis.set_minor_locator(minutes)
+	plt.show()
+
 
 if __name__ == "__main__":
 	main()
-'''
